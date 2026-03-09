@@ -6,5 +6,4 @@
 .report/
 
 # 技能配置和输出
-skills/*/config.json
-skills/*/reports/
+.env
