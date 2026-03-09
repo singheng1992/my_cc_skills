@@ -261,6 +261,40 @@ class GitReportGenerator:
                     report += f"- **{commit['hash']}** {commit['message']}\n"
                     report += f"  - 作者：{commit['author']}\n"
                     report += f"  - 时间：{commit['date']}\n\n"
+
+            # 生成总结
+            report += "## 总结\n\n"
+
+            # 活跃项目排行
+            sorted_projects = sorted(project_data, key=lambda x: x['commit_count'], reverse=True)
+            report += "### 活跃项目排行\n\n"
+            for i, project in enumerate(sorted_projects, 1):
+                report += f"{i}. **{project['name']}** - {project['commit_count']} 条提交\n"
+
+            report += "\n"
+
+            # 提交类型统计（基于提交信息前缀）
+            commit_types = {}
+            for project in project_data:
+                for commit in project['commits']:
+                    msg = commit['message'].strip()
+                    if ':' in msg:
+                        commit_type = msg.split(':')[0].strip()
+                        commit_types[commit_type] = commit_types.get(commit_type, 0) + 1
+
+            if commit_types:
+                report += "### 提交类型分布\n\n"
+                for commit_type, count in sorted(commit_types.items(), key=lambda x: x[1], reverse=True):
+                    report += f"- **{commit_type}**：{count} 条\n"
+
+                report += "\n"
+
+            # 主要工作内容
+            report += "### 主要工作内容\n\n"
+            report += f"在指定时间范围内，共涉及 {len(project_data)} 个项目，累计 {total_commits} 次提交。"
+            if sorted_projects:
+                report += f"最活跃的项目是 **{sorted_projects[0]['name']}**（{sorted_projects[0]['commit_count']} 条提交）。"
+            report += "\n"
         else:
             report += "## 提示\n\n在指定时间范围内没有找到任何提交记录。\n"
 
