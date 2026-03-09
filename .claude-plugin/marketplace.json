@@ -1,0 +1,22 @@
+{
+    "name": "my-cc-skills",
+    "owner": {
+        "name": "singheng1992",
+        "email": "singheng1992@gmail.com"
+    },
+    "metadata": {
+        "description": "my claude code skills",
+        "version": "1.0.0"
+    },
+    "plugins": [
+        {
+            "name": "git-report",
+            "description": "根据git日志生成报告",
+            "source": "./",
+            "strict": false,
+            "skills": [
+                "./skills/git-report"
+            ]
+        }
+    ]
+}

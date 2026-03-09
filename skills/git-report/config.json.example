@@ -1,0 +1,6 @@
+{
+  "root_dir": "",
+  "template_dir": "./templates",
+  "default_template": "report.md",
+  "output_dir": ""
+}
