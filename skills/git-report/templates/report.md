@@ -1,7 +1,6 @@
 # 工作报告
-
-**时间范围**：{{date_range}}
-**生成时间**：{{generated_at}}
+- **时间范围**：{{date_range}}
+- **生成时间**：{{generated_at}}
 
 ## 概览
 
