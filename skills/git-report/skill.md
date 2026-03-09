@@ -23,25 +23,6 @@ code_root_dir="/path/to/code/root"
 
 # 报告输出目录（必填）
 report_output_dir="/path/to/output/dir"
-
-# =================================================================
-# 报告总结配置（灵活总结功能）
-# =================================================================
-
-# 总结模式：template（模板）、ai（AI生成）、custom（自定义文本）
-summary_mode="template"
-
-# 总结模板类型：default、daily、weekly、monthly、simple
-# 当 summary_mode=template 时生效
-summary_template="default"
-
-# AI 生成总结的提示词模板
-# 当 summary_mode=ai 时生效，Claude 将根据提交记录生成总结
-ai_summary_prompt="请根据以上Git提交记录，生成一份简洁的工作总结，突出主要工作内容和成果。"
-
-# 自定义总结文本
-# 当 summary_mode=custom 时生效
-custom_summary="这是自定义总结内容"
 ```
 
 ## 使用方法
@@ -78,31 +59,23 @@ bash scripts/git_report.sh <时间范围> [选项]
 
 | 参数 | 说明 |
 |------|------|
-| `-p, --prompt` | 自定义总结内容（覆盖配置文件设置） |
-| `-s, --summary-mode` | 总结模式：`template`/`ai`/`custom` |
-| `-t, --template` | 总结模板名称：`default`/`daily`/`weekly`/`monthly`/`simple` |
+| `-p, --prompt` | 附加提示词 |
 | `-o, --output` | 输出文件路径 |
 
 ### 使用示例
 
 ```bash
-# 生成今天的日报（使用默认总结模板）
+# 生成今天的日报
 bash scripts/git_report.sh today
 
 # 生成本周周报
 bash scripts/git_report.sh week
 
-# 使用周报总结模板
-bash scripts/git_report.sh week -t weekly
-
-# 使用 AI 生成总结（需要通过 Claude Code 调用）
-bash scripts/git_report.sh week -s ai
-
-# 使用自定义总结
-bash scripts/git_report.sh week -s custom -p "本周主要完成了后端API开发"
-
 # 生成自定义日期范围报告
 bash scripts/git_report.sh 2025-03-01~2025-03-07
+
+# 添加附加提示词
+bash scripts/git_report.sh week -p "重点关注后端开发"
 ```
 
 ## 错误处理
@@ -124,86 +97,9 @@ git-report/
 │   ├── .env.example         # 配置示例
 │   └── .env                 # 配置文件（需创建）
 ├── assets/
-│   ├── report-template.md   # 报告模板
-│   └── summary-templates.md # 总结模板集合
+│   └── report-template.md           # 报告模板
 ```
-
-## 灵活总结功能详解
-
-### 总结模式
-
-本技能支持三种总结模式，可通过 `.env` 配置或命令行参数指定：
-
-#### 1. Template 模式（默认）
-
-使用预定义的总结模板，支持变量插值。
-
-**可用模板：**
-- `default` - 通用默认模板
-- `daily` - 日报专用模板
-- `weekly` - 周报专用模板
-- `monthly` - 月报专用模板
-- `simple` - 简洁模板
-
-**支持的变量：**
-- `{{date_label}}` - 日期范围标签
-- `{{project_count}}` - 有提交的项目数
-- `{{total_commits}}` - 总提交数
-- `{{start_date}}` - 开始日期
-- `{{end_date}}` - 结束日期
-- `{{generated_at}}` - 生成时间
-
-**自定义模板：**
-
-编辑 `assets/summary-templates.md` 文件，添加自定义模板：
-
-```markdown
-my_template: |
-  这是我的自定义总结，项目数：{{project_count}}，提交数：{{total_commits}}
-```
-
-#### 2. AI 模式
-
-通过 Claude AI 根据提交记录智能生成总结。
-
-**特点：**
-- 自动分析提交信息
-- 提取工作重点和趋势
-- 生成个性化总结
-
-**使用方式：**
-```bash
-# 命令行指定
-bash scripts/git_report.sh week -s ai
-
-# 或在 .env 中设置
-summary_mode="ai"
-```
-
-#### 3. Custom 模式
-
-使用固定的自定义文本作为总结。
-
-**使用方式：**
-```bash
-# 命令行指定
-bash scripts/git_report.sh week -s custom -p "本周主要工作：完成用户认证模块开发"
-
-# 或在 .env 中设置
-summary_mode="custom"
-custom_summary="这是固定的总结内容"
-```
-
-### 优先级规则
-
-1. 命令行 `-p` 参数优先级最高
-2. 命令行 `-s` 和 `-t` 参数次之
-3. `.env` 配置文件中的设置优先级最低
 
 ## 创建时间
 
 2025-03-09
-
-## 更新时间
-
-- 2025-03-09：添加灵活总结功能，支持模板/AI/自定义三种模式

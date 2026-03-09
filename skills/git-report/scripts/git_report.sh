@@ -15,18 +15,11 @@ SCRIPT_NAME="$(basename "$0")"
 # 默认配置
 CONFIG_FILE="${SCRIPT_DIR}/.env"
 TEMPLATE_FILE="${SCRIPT_DIR}/../assets/report-template.md"
-SUMMARY_TEMPLATES_FILE="${SCRIPT_DIR}/../assets/summary-templates.md"
 
 # 默认参数
 DATE_RANGE=""
 PROMPT=""
 USE_PYTHON=false
-
-# 总结配置（从配置文件读取，此处为默认值）
-SUMMARY_MODE="${SUMMARY_MODE:-template}"
-SUMMARY_TEMPLATE="${SUMMARY_TEMPLATE:-default}"
-AI_SUMMARY_PROMPT="${AI_SUMMARY_PROMPT:-请根据以上Git提交记录，生成一份简洁的工作总结，突出主要工作内容和成果。}"
-CUSTOM_SUMMARY="${CUSTOM_SUMMARY:-}"
 
 # =================================================================
 # 函数定义
@@ -54,9 +47,7 @@ usage() {
     echo "  YYYY-MM-DD~    - 从指定日期到现在"
     echo ""
     echo "选项:"
-    echo "  -p, --prompt TEXT  附加提示词（覆盖配置文件中的总结设置）"
-    echo "  -s, --summary-mode MODE  总结模式：template/ai/custom"
-    echo "  -t, --template NAME  总结模板名称：default/daily/weekly/monthly/simple"
+    echo "  -p, --prompt TEXT  附加提示词"
     echo "  -c, --config FILE  配置文件路径 (默认: ${CONFIG_FILE})"
     echo "  -o, --output FILE  输出文件路径"
     echo "  -h, --help         显示帮助"
@@ -77,14 +68,6 @@ parse_args() {
         case "$1" in
             -p|--prompt)
                 PROMPT="$2"
-                shift 2
-                ;;
-            -s|--summary-mode)
-                SUMMARY_MODE="$2"
-                shift 2
-                ;;
-            -t|--template)
-                SUMMARY_TEMPLATE="$2"
                 shift 2
                 ;;
             -c|--config)
@@ -146,46 +129,6 @@ check_environment() {
         mkdir -p "$report_output_dir" || error "无法创建输出目录: $report_output_dir"
     fi
     echo "输出目录存在: $report_output_dir"
-}
-
-# 从模板文件读取指定模板内容
-read_summary_template() {
-    local template_name="$1"
-    local templates_file="$SUMMARY_TEMPLATES_FILE"
-
-    if [[ ! -f "$templates_file" ]]; then
-        echo ""  # 模板文件不存在，返回空
-        return
-    fi
-
-    # 读取模板内容（跳过注释和空行，找到指定模板）
-    awk -v name="$template_name" '
-        BEGIN { found=0; content="" }
-        /^#/ || /^$/ { next }
-        /^[a-zA-Z_]+:$/ {
-            if (found) exit;
-            found = ($1 == name ":");
-            next;
-        }
-        found { content = content $0 "\n" }
-        END { print content }
-    ' "$templates_file"
-}
-
-# 替换模板变量
-replace_template_vars() {
-    local content="$1"
-    local summary="$2"
-
-    # 替换变量
-    summary="${summary//\{\{date_label\}\}/$DATE_LABEL}"
-    summary="${summary//\{\{project_count\}\}/$project_count}"
-    summary="${summary//\{\{total_commits\}\}/$total_commits}"
-    summary="${summary//\{\{start_date\}\}/$START_DATE}"
-    summary="${summary//\{\{end_date\}\}/$END_DATE}"
-    summary="${summary//\{\{generated_at\}\}/$generated_at}"
-
-    echo "$summary"
 }
 
 # 解析日期范围
@@ -384,58 +327,7 @@ ${project_details}
 
 ## 总结
 
-SUMMARY_CONTENT
-EOF
-
-    # 生成总结内容
-    local final_summary=""
-    local generated_at=$(date "+%Y-%m-%d %H:%M:%S")
-
-    # 如果用户通过 -p 参数提供了自定义提示词，优先使用
-    if [[ -n "$prompt" ]]; then
-        final_summary="$prompt"
-    else
-        # 根据总结模式生成内容
-        case "$SUMMARY_MODE" in
-            template)
-                # 从模板文件读取并替换变量
-                local template_content=$(read_summary_template "$SUMMARY_TEMPLATE")
-                if [[ -n "$template_content" ]]; then
-                    final_summary=$(replace_template_vars "$content" "$template_content")
-                else
-                    final_summary="在{{date_label}}期间，共涉及{{project_count}}个项目，完成{{total_commits}}次代码提交。"
-                    final_summary=$(replace_template_vars "$content" "$final_summary")
-                fi
-                ;;
-            ai)
-                # AI 模式：生成 AI 提示标记，由 Claude Code 处理
-                final_summary="_AI_GENERATED_SUMMARY_"
-                # 将 AI 提示词保存到临时文件供 Claude 使用
-                local ai_prompt_file="${OUTPUT_FILE}.ai-prompt.txt"
-                cat > "$ai_prompt_file" << EOF
-$AI_SUMMARY_PROMPT
-
-以下是需要总结的Git提交记录：
-项目数：${project_count}
-总提交数：${total_commits}
-时间范围：${DATE_LABEL}
-
-${project_details}
-EOF
-                echo "AI 提示词已保存到: $ai_prompt_file"
-                ;;
-            custom)
-                final_summary="$CUSTOM_SUMMARY"
-                ;;
-            *)
-                final_summary="在${DATE_LABEL}期间，共涉及${project_count}个项目，完成${total_commits}次代码提交。"
-                ;;
-        esac
-    fi
-
-    # 替换总结内容
-    sed -i.bak "s|SUMMARY_CONTENT|$final_summary|" "$temp_file"
-    rm -f "${temp_file}.bak"
+${prompt:-根据上述提交记录，本周期内主要完成了项目开发工作。}
 EOF
 
     # 复制到输出文件
